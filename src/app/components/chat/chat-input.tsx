@@ -5,7 +5,7 @@ import { Mic, Send } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-export default function ChatInput({ onSendMessage }: { onSendMessage: (message: string) => void }) {
+export default function ChatInput({ onSendMessage, isSending }: { onSendMessage: (message: string) => void, isSending: boolean }) {
   const [inputValue, setInputValue] = useState("");
   const { toast } = useToast();
 
@@ -19,7 +19,7 @@ export default function ChatInput({ onSendMessage }: { onSendMessage: (message: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isSending) return;
     onSendMessage(inputValue);
     setInputValue("");
   };
@@ -40,13 +40,14 @@ export default function ChatInput({ onSendMessage }: { onSendMessage: (message: 
         onKeyDown={handleKeyDown}
         className="min-h-[52px] resize-none pr-28"
         aria-label="Chat input"
+        disabled={isSending}
       />
       <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1">
-        <Button type="button" variant="ghost" size="icon" onClick={handleMicClick}>
+        <Button type="button" variant="ghost" size="icon" onClick={handleMicClick} disabled={isSending}>
           <Mic className="h-5 w-5" />
           <span className="sr-only">Use microphone</span>
         </Button>
-        <Button type="submit" size="icon" disabled={!inputValue.trim()}>
+        <Button type="submit" size="icon" disabled={!inputValue.trim() || isSending}>
           <Send className="h-5 w-5" />
           <span className="sr-only">Send message</span>
         </Button>

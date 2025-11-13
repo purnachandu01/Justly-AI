@@ -13,6 +13,7 @@ export default function ChatPage() {
   const { user, isUserLoading } = useUser();
   const chatId = params.chatId as string;
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -22,8 +23,6 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!chatId) return;
-    // In a real app, you would fetch the chat history for the given chatId
-    // For this demo, we'll just start with an empty chat or load from local storage if available
     const storedChats = localStorage.getItem('chats');
     if (storedChats) {
       const chats = JSON.parse(storedChats);
@@ -36,7 +35,8 @@ export default function ChatPage() {
     }
   }, [chatId]);
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
+    setIsSending(true);
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
@@ -58,13 +58,33 @@ export default function ChatPage() {
     }
     localStorage.setItem('chats', JSON.stringify(chats));
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await fetch("https://saitejarr.app.n8n.cloud/webhook/a54d3e1f-3850-4e08-a8e2-5b6b91b8e967/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionId: `firebase-${chatId}`,
+          message: content,
+          userLang: "English"
+        }),
+      });
+
+      const data = await response.json();
+      let aiContent = "Sorry, I couldn't get a response.";
+      if (data && data.reply) {
+        aiContent = data.reply;
+      } else if (data) {
+        aiContent = JSON.stringify(data);
+      }
+      
       const aiMessage: Message = {
         id: uuidv4(),
         role: 'ai',
-        content: `This is a simulated AI response to: "${content}"`,
+        content: aiContent,
       };
+      
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
 
@@ -73,7 +93,18 @@ export default function ChatPage() {
         chats[updatedChatIndex].messages = finalMessages;
         localStorage.setItem('chats', JSON.stringify(chats));
       }
-    }, 1000);
+
+    } catch (error: any) {
+        const errorMessage: Message = {
+            id: uuidv4(),
+            role: 'ai',
+            content: `Error: ${error.message}`,
+        };
+        const finalMessages = [...updatedMessages, errorMessage];
+        setMessages(finalMessages);
+    } finally {
+        setIsSending(false);
+    }
   };
 
   if (isUserLoading || !user) {
@@ -87,7 +118,7 @@ export default function ChatPage() {
       </div>
       <div className="absolute bottom-0 left-0 w-full border-t border-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto max-w-3xl p-4 md:p-6">
-          <ChatInput onSendMessage={handleSendMessage} />
+          <ChatInput onSendMessage={handleSendMessage} isSending={isSending} />
         </div>
       </div>
     </div>
