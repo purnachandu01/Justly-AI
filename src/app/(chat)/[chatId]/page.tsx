@@ -67,7 +67,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           sessionId: chatId,
           action: "sendMessage",
-          message: content,
+          chatInput: content,
           userLang: "English"
         }),
       });
