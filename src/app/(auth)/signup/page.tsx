@@ -20,7 +20,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading]_useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
 
   const handleSignup = async (e: React.FormEvent) => {
