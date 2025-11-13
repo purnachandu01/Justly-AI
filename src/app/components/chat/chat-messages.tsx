@@ -1,7 +1,9 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+'use client';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { type Message } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { Scale } from "lucide-react";
+import { Markdown } from './markdown';
 
 export default function ChatMessages({ messages }: { messages: Message[] }) {
   
@@ -25,18 +27,22 @@ export default function ChatMessages({ messages }: { messages: Message[] }) {
 
           <div
             className={cn(
-              "max-w-md rounded-lg p-3 text-sm md:max-w-xl",
+              "max-w-md rounded-lg p-3 text-sm md:max-w-xl prose prose-sm prose-invert",
               message.role === 'user'
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary"
             )}
           >
-            <p className="whitespace-pre-wrap">{message.content}</p>
+            {message.role === 'ai' ? (
+              <Markdown content={message.content} />
+            ) : (
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            )}
           </div>
 
           {message.role === 'user' && (
             <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarFallback>U</AvatarFallback>
+              <AvatarFallback>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
             </Avatar>
           )}
         </div>
