@@ -1,11 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { type Message } from "@/lib/mock-data";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { cn } from "@/lib/utils";
 import { Scale } from "lucide-react";
 
 export default function ChatMessages({ messages }: { messages: Message[] }) {
-  const userAvatar = PlaceHolderImages.find((p) => p.id === 'user-avatar');
   
   return (
     <div className="space-y-6">
@@ -38,7 +36,6 @@ export default function ChatMessages({ messages }: { messages: Message[] }) {
 
           {message.role === 'user' && (
             <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarImage src={userAvatar?.imageUrl} alt="User" data-ai-hint={userAvatar?.imageHint} />
               <AvatarFallback>U</AvatarFallback>
             </Avatar>
           )}

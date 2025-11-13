@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,21 +17,32 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarSeparator,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { Logo } from '../logo';
-import { Plus, LogOut, Settings } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Plus, LogOut, Settings, MessageSquare } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
+import { useEffect, useState } from 'react';
+import { type Chat } from '@/lib/mock-data';
 
 export default function ChatSidebar() {
   const router = useRouter();
+  const params = useParams();
   const { isMobile, setOpenMobile } = useSidebar();
-  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
+  const [chats, setChats] = useState<Chat[]>([]);
+
+  useEffect(() => {
+    const storedChats = localStorage.getItem('chats');
+    if (storedChats) {
+      setChats(JSON.parse(storedChats));
+    }
+  }, [params.chatId]);
 
   const handleLogout = () => {
-    // In a real app, you'd clear session, etc.
     router.push('/login');
   };
 
@@ -42,6 +53,13 @@ export default function ChatSidebar() {
       setOpenMobile(false);
     }
   };
+
+  const handleChatSelect = (chatId: string) => {
+    router.push(`/${chatId}`);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }
 
   return (
     <>
@@ -56,7 +74,20 @@ export default function ChatSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="p-2">
-        {/* Recent chats would be listed here */}
+        <SidebarMenu>
+          {chats.map((chat) => (
+            <SidebarMenuItem key={chat.id}>
+              <SidebarMenuButton 
+                onClick={() => handleChatSelect(chat.id)} 
+                isActive={params.chatId === chat.id}
+                className="w-full justify-start"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>{chat.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
       </SidebarContent>
       
       <SidebarSeparator />
@@ -66,11 +97,10 @@ export default function ChatSidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={cn("flex w-full items-center justify-start gap-2 p-2", "group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center")}>
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userAvatar?.imageUrl} alt="User" data-ai-hint={userAvatar?.imageHint} />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start text-sm group-data-[collapsible=icon]:hidden">
-                {/* User name would go here */}
+                <span>User Name</span>
               </div>
             </Button>
           </DropdownMenuTrigger>
