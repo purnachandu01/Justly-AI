@@ -34,6 +34,7 @@ export default function ChatSidebar() {
   const params = useParams();
   const { isMobile, setOpenMobile } = useSidebar();
   const [chats, setChats] = useState<Chat[]>([]);
+  const [userName, setUserName] = useState<string | null>(null);
   const chatId = params.chatId as string;
 
   useEffect(() => {
@@ -41,9 +42,14 @@ export default function ChatSidebar() {
     if (storedChats) {
       setChats(JSON.parse(storedChats));
     }
+    const storedUserName = localStorage.getItem('userName');
+    if (storedUserName) {
+      setUserName(storedUserName);
+    }
   }, [chatId]);
 
   const handleLogout = () => {
+    localStorage.removeItem('userName');
     router.push('/login');
   };
 
@@ -98,10 +104,10 @@ export default function ChatSidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={cn("flex w-full items-center justify-start gap-2 p-2", "group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center")}>
               <Avatar className="h-8 w-8">
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarFallback>{userName ? userName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start text-sm group-data-[collapsible=icon]:hidden">
-                <span>User Name</span>
+                <span>{userName || 'User Name'}</span>
               </div>
             </Button>
           </DropdownMenuTrigger>

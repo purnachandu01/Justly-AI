@@ -6,14 +6,15 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle user creation here.
-    // For this demo, we'll just redirect to the first chat.
+    localStorage.setItem('userName', name);
     router.push('/1');
   }
 
@@ -30,7 +31,7 @@ export default function SignupPage() {
         <form onSubmit={handleSignup} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" type="text" placeholder="John Doe" required />
+            <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
