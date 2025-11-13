@@ -4,8 +4,10 @@ import { type Message } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { Scale } from "lucide-react";
 import { Markdown } from './markdown';
+import { useUser } from "@/firebase";
 
 export default function ChatMessages({ messages }: { messages: Message[] }) {
+  const { user } = useUser();
   
   return (
     <div className="space-y-6">
