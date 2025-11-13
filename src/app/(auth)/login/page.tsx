@@ -15,9 +15,10 @@ export default function LoginPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real app, you'd fetch the user's name based on their email.
-    // For this demo, we'll extract a name from the email.
+    // For this demo, we'll extract a name from the email and capitalize it.
     const name = email.split('@')[0];
-    localStorage.setItem('userName', name);
+    const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
+    localStorage.setItem('userName', capitalizedName);
     router.push('/1');
   }
 

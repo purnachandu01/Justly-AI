@@ -13,8 +13,11 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
         <ChatSidebar />
       </Sidebar>
       <SidebarInset>
-        <div className="p-2 absolute top-2 left-2">
+        <div className="fixed top-2 left-2 z-20 md:hidden">
           <SidebarTrigger />
+        </div>
+        <div className="hidden md:block absolute top-2 left-2 z-20">
+            <SidebarTrigger />
         </div>
         {children}
       </SidebarInset>
