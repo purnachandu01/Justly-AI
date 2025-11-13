@@ -7,15 +7,39 @@ import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useAuth } from "@/firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SignupPage() {
   const router = useRouter();
+  const auth = useAuth();
+  const { toast } = useToast();
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('userName', name);
-    router.push('/1');
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: name
+        });
+      }
+      router.push('/1');
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Signup Failed",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -35,13 +59,15 @@ export default function SignupPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
+            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full">Sign Up</Button>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Signing up...' : 'Sign Up'}
+          </Button>
         </form>
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}

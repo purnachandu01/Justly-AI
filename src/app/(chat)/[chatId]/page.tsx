@@ -4,12 +4,21 @@ import ChatMessages from '@/app/components/chat/chat-messages';
 import { type Message } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 export default function ChatPage() {
   const params = useParams();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
   const chatId = params.chatId as string;
   const [messages, setMessages] = useState<Message[]>([]);
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     if (!chatId) return;
@@ -66,6 +75,10 @@ export default function ChatPage() {
       }
     }, 1000);
   };
+
+  if (isUserLoading || !user) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="relative flex h-full flex-col">

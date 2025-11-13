@@ -28,13 +28,16 @@ import { cn } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 import { useEffect, useState } from 'react';
 import { type Chat } from '@/lib/mock-data';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 export default function ChatSidebar() {
   const router = useRouter();
   const params = useParams();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const { isMobile, setOpenMobile } = useSidebar();
   const [chats, setChats] = useState<Chat[]>([]);
-  const [userName, setUserName] = useState<string | null>(null);
   const chatId = params.chatId as string;
 
   useEffect(() => {
@@ -42,14 +45,10 @@ export default function ChatSidebar() {
     if (storedChats) {
       setChats(JSON.parse(storedChats));
     }
-    const storedUserName = localStorage.getItem('userName');
-    if (storedUserName) {
-      setUserName(storedUserName);
-    }
   }, [chatId]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('userName');
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/login');
   };
 
@@ -105,10 +104,10 @@ export default function ChatSidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={cn("flex w-full items-center justify-start gap-2 p-2", "group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center")}>
               <Avatar className="h-8 w-8">
-                <AvatarFallback>{userName ? userName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                <AvatarFallback>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start text-sm group-data-[collapsible=icon]:hidden">
-                <span>{userName || 'User Name'}</span>
+                <span>{isUserLoading ? 'Loading...' : (user?.displayName || 'User Name')}</span>
               </div>
             </Button>
           </DropdownMenuTrigger>
