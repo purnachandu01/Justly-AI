@@ -71,12 +71,12 @@ export default function ChatSidebar() {
   return (
     <>
       <SidebarHeader>
-        <div className="flex w-full items-center justify-between">
+        <div className="flex w-full items-center justify-between group-data-[collapsible=icon]:hidden">
             <Logo />
         </div>
         <Button onClick={handleNewChat} variant="secondary" className="w-full">
             <Plus className="mr-2 h-4 w-4" />
-            New Chat
+            <span className="group-data-[collapsible=icon]:hidden">New Chat</span>
         </Button>
       </SidebarHeader>
       
@@ -88,9 +88,10 @@ export default function ChatSidebar() {
                 onClick={() => handleChatSelect(chat.id)} 
                 isActive={chatId === chat.id}
                 className="w-full justify-start"
+                tooltip={chat.title}
               >
                 <MessageSquare className="h-4 w-4" />
-                <span>{chat.title}</span>
+                <span className="group-data-[collapsible=icon]:hidden">{chat.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
