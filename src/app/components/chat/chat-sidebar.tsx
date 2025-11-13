@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,20 +16,16 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarFooter,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { chats } from '@/lib/mock-data';
 import { Logo } from '../logo';
-import { MessageSquare, Plus, LogOut, Settings } from 'lucide-react';
+import { Plus, LogOut, Settings } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ChatSidebar() {
-  const pathname = usePathname();
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
@@ -39,7 +35,9 @@ export default function ChatSidebar() {
     router.push('/login');
   };
 
-  const handleLinkClick = () => {
+  const handleNewChat = () => {
+    const newChatId = uuidv4();
+    router.push(`/${newChatId}`);
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -51,28 +49,14 @@ export default function ChatSidebar() {
         <div className="flex w-full items-center justify-between">
             <Logo />
         </div>
-        <Button asChild variant="secondary" className="w-full">
-            <Link href="/" onClick={handleLinkClick}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Chat
-            </Link>
+        <Button onClick={handleNewChat} variant="secondary" className="w-full">
+            <Plus className="mr-2 h-4 w-4" />
+            New Chat
         </Button>
       </SidebarHeader>
       
       <SidebarContent className="p-2">
-        <SidebarMenu>
-          <span className="px-2 pb-2 text-xs font-medium text-muted-foreground">Recent</span>
-          {chats.map((chat) => (
-            <SidebarMenuItem key={chat.id}>
-              <SidebarMenuButton asChild isActive={pathname === `/${chat.id}`} className="w-full justify-start truncate">
-                <Link href={`/${chat.id}`} onClick={handleLinkClick}>
-                  <MessageSquare />
-                  <span>{chat.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+        {/* Recent chats would be listed here */}
       </SidebarContent>
       
       <SidebarSeparator />
@@ -82,11 +66,11 @@ export default function ChatSidebar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className={cn("flex w-full items-center justify-start gap-2 p-2", "group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center")}>
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userAvatar?.imageUrl} alt="Demo User" data-ai-hint={userAvatar?.imageHint} />
-                <AvatarFallback>DU</AvatarFallback>
+                <AvatarImage src={userAvatar?.imageUrl} alt="User" data-ai-hint={userAvatar?.imageHint} />
+                <AvatarFallback>U</AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start text-sm group-data-[collapsible=icon]:hidden">
-                <span className="font-medium">Demo User</span>
+                {/* User name would go here */}
               </div>
             </Button>
           </DropdownMenuTrigger>

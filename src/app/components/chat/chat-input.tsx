@@ -5,7 +5,7 @@ import { Mic, Send } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-export default function ChatInput() {
+export default function ChatInput({ onSendMessage }: { onSendMessage: (message: string) => void }) {
   const [inputValue, setInputValue] = useState("");
   const { toast } = useToast();
 
@@ -20,12 +20,7 @@ export default function ChatInput() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    // In a real app, you'd send the message to the backend here.
-    console.log("Sending message:", inputValue);
-    toast({
-        title: "Message Sent",
-        description: "In a real app, this would be a new message.",
-    });
+    onSendMessage(inputValue);
     setInputValue("");
   };
 
