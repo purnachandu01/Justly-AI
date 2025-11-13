@@ -65,7 +65,8 @@ export default function ChatPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sessionId: `firebase-${chatId}`,
+          sessionId: chatId,
+          action: "sendMessage",
           message: content,
           userLang: "English"
         }),
