@@ -4,53 +4,62 @@ import React from 'react';
 
 // A simple and safe markdown to HTML converter
 const markdownToHtml = (text: string) => {
+  if (!text) return '';
+
   let html = text
+    // Escape HTML to prevent XSS
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
     // Bold
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     // Italic
     .replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+  const lines = html.split('\n');
+  let processedHtml = '';
+  let inList = false;
+  let listType: 'ol' | 'ul' | null = null;
 
-  // Handle numbered lists
-  const listItems = html.match(/^\d+\.\s.*$/gm);
-  if (listItems) {
-    let listHtml = '<ol>';
-    listItems.forEach(item => {
-      const itemContent = item.replace(/^\d+\.\s/, '');
-      listHtml += `<li>${itemContent}</li>`;
-    });
-    listHtml += '</ol>';
-    
-    // Replace the original list text with the HTML list
-    html = html.replace(/^\d+\.\s.*$/gm, '').trim();
-    const lines = html.split('\n').filter(line => line.trim() !== '');
-    const otherContent = lines.join('<br/>');
-    
-    let listStarted = false;
-    let processedHtml = '';
-    html.split('\n').forEach(line => {
-      if (/^\d+\.\s/.test(line)) {
-        if (!listStarted) {
-          processedHtml += '<ol>';
-          listStarted = true;
+  lines.forEach(line => {
+    const isNumberedListItem = /^\d+\.\s/.test(line);
+    const isBulletedListItem = /^\*\s/.test(line);
+
+    if (isNumberedListItem || isBulletedListItem) {
+      const currentListType = isNumberedListItem ? 'ol' : 'ul';
+      
+      if (!inList || listType !== currentListType) {
+        // Close previous list if type is changing
+        if (inList) {
+          processedHtml += `</${listType}>`;
         }
-        processedHtml += `<li>${line.replace(/^\d+\.\s/, '')}</li>`;
-      } else {
-        if (listStarted) {
-          processedHtml += '</ol>';
-          listStarted = false;
-        }
-        processedHtml += line ? `<p>${line}</p>` : '';
+        processedHtml += `<${currentListType}>`;
+        inList = true;
+        listType = currentListType;
       }
-    });
-    if (listStarted) {
-      processedHtml += '</ol>';
+      
+      const itemContent = line.replace(/^\d+\.\s|^\*\s/, '');
+      processedHtml += `<li>${itemContent}</li>`;
+
+    } else {
+      if (inList) {
+        processedHtml += `</` + listType + `>`;
+        inList = false;
+        listType = null;
+      }
+      if (line.trim()) {
+        processedHtml += `<p>${line}</p>`;
+      }
     }
-    return processedHtml;
+  });
+
+  if (inList) {
+    processedHtml += `</` + listType + `>`;
   }
 
-
-  // For other text, just wrap paragraphs
-  return html.split('\n').map(p => p ? `<p>${p}</p>` : '').join('');
+  return processedHtml;
 };
 
 export function Markdown({ content }: { content: string }) {
