@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "Chat": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Chat",
+      "type": "object",
+      "description": "Represents a single chat conversation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chat entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Chat)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title or name of the chat conversation."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the chat was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the chat was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Message": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Message",
+      "type": "object",
+      "description": "Represents a single message within a chat conversation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message entity."
+        },
+        "chatId": {
+          "type": "string",
+          "description": "Reference to Chat. (Relationship: Chat 1:N Message)"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Reference to User who sent the message. (Relationship: User 1:N Message)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The actual text content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp indicating when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "chatId",
+        "senderId",
+        "content",
+        "timestamp"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the JustlyAI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity.  This id corresponds to the firebase auth user id."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The display name of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "createdAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. The 'userId' corresponds to the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chats/{chatId}",
+        "definition": {
+          "entityName": "Chat",
+          "schema": {
+            "$ref": "#/backend/entities/Chat"
+          },
+          "description": "Stores chat conversations belonging to a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user who owns the chat."
+            },
+            {
+              "name": "chatId",
+              "description": "The unique identifier for the chat conversation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chats/{chatId}/messages/{messageId}",
+        "definition": {
+          "entityName": "Message",
+          "schema": {
+            "$ref": "#/backend/entities/Message"
+          },
+          "description": "Stores messages within a specific chat conversation, owned by a specific user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user who owns the chat."
+            },
+            {
+              "name": "chatId",
+              "description": "The unique identifier for the chat conversation."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the message."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to be secure, scalable, and easily debuggable, following the principles of Authorization Independence, Clarity of Intent, and DBAC. It leverages path-based ownership for private user data and avoids hierarchical authorization dependencies by denormalizing authorization data.\n\n*   **Users:** User data is stored in `/users/{userId}` using the Firebase Authentication `uid` as the document ID. This enforces clear ownership. No other users can access other user data. \n*   **Chats:** Chats are stored in a subcollection `/users/{userId}/chats/{chatId}` to associate chats with their owning user. This establishes a 1:N relationship between users and chats.\n*   **Messages:** Messages are stored in a subcollection `/users/{userId}/chats/{chatId}/messages/{messageId}`, associating messages with a specific chat and user. This reinforces the 1:N relationship between chats and messages.\n\n**Authorization Independence:** This structure achieves authorization independence by using the Firebase Auth `uid` for user identification and by nesting data within the user's document path (`/users/{userId}`). Access control is thus simplified because we don't need to `get()` parent documents to validate authorization. All data for a user is located under their `uid` which makes writing security rules easier.\n\n**QAPs (Rules Are Not Filters):** The structure facilitates secure `list` operations by segregating user-specific data under their respective `/users/{userId}` path. This ensures that when listing chats or messages, rules can efficiently verify that the requested data belongs to the authenticated user without needing to filter based on document content."
+  }
+}
