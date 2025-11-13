@@ -20,13 +20,14 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuAction,
 } from '@/components/ui/sidebar';
 import { Logo } from '../logo';
-import { Plus, LogOut, Settings, MessageSquare } from 'lucide-react';
+import { Plus, LogOut, Settings, MessageSquare, Trash2 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
-import { useEffect, useState } from 'react';
+import { useEffect, useState }from 'react';
 import { type Chat } from '@/lib/mock-data';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -36,7 +37,7 @@ export default function ChatSidebar() {
   const params = useParams();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, state } = useSidebar();
   const [chats, setChats] = useState<Chat[]>([]);
   const chatId = params.chatId as string;
 
@@ -45,10 +46,11 @@ export default function ChatSidebar() {
     if (storedChats) {
       setChats(JSON.parse(storedChats));
     }
-  }, [chatId]);
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
+    localStorage.removeItem('userName');
     router.push('/login');
   };
 
@@ -67,15 +69,26 @@ export default function ChatSidebar() {
     }
   }
 
+  const handleDeleteChat = (e: React.MouseEvent, chatIdToDelete: string) => {
+    e.stopPropagation();
+    const updatedChats = chats.filter((chat) => chat.id !== chatIdToDelete);
+    setChats(updatedChats);
+    localStorage.setItem('chats', JSON.stringify(updatedChats));
+
+    if (chatId === chatIdToDelete) {
+      router.push('/');
+    }
+  };
+
   return (
     <>
       <SidebarHeader>
-        <div className="flex w-full items-center justify-between group-data-[collapsible=icon]:hidden">
+        <div className={cn("flex w-full items-center justify-between", state === 'collapsed' && "hidden")}>
             <Logo />
         </div>
         <Button onClick={handleNewChat} variant="secondary" className="w-full">
             <Plus className="mr-2 h-4 w-4" />
-            <span className="group-data-[collapsible=icon]:hidden">New Chat</span>
+            <span className={cn(state === 'collapsed' && "hidden")}>New Chat</span>
         </Button>
       </SidebarHeader>
       
@@ -90,8 +103,11 @@ export default function ChatSidebar() {
                 tooltip={chat.title}
               >
                 <MessageSquare className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">{chat.title}</span>
+                <span className={cn("truncate", state === 'collapsed' && "hidden")}>{chat.title}</span>
               </SidebarMenuButton>
+              <SidebarMenuAction showOnHover onClick={(e) => handleDeleteChat(e, chat.id)} tooltip="Delete chat">
+                <Trash2 />
+              </SidebarMenuAction>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -106,7 +122,7 @@ export default function ChatSidebar() {
               <Avatar className="h-8 w-8">
                 <AvatarFallback>{user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
-              <div className="flex flex-col items-start text-sm group-data-[collapsible=icon]:hidden">
+              <div className={cn("flex flex-col items-start text-sm", state === 'collapsed' && "hidden")}>
                 <span>{isUserLoading ? 'Loading...' : (user?.displayName || 'User Name')}</span>
               </div>
             </Button>
