@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -34,13 +34,14 @@ export default function ChatSidebar() {
   const params = useParams();
   const { isMobile, setOpenMobile } = useSidebar();
   const [chats, setChats] = useState<Chat[]>([]);
+  const chatId = params.chatId as string;
 
   useEffect(() => {
     const storedChats = localStorage.getItem('chats');
     if (storedChats) {
       setChats(JSON.parse(storedChats));
     }
-  }, [params.chatId]);
+  }, [chatId]);
 
   const handleLogout = () => {
     router.push('/login');
@@ -54,8 +55,8 @@ export default function ChatSidebar() {
     }
   };
 
-  const handleChatSelect = (chatId: string) => {
-    router.push(`/${chatId}`);
+  const handleChatSelect = (selectedChatId: string) => {
+    router.push(`/${selectedChatId}`);
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -79,7 +80,7 @@ export default function ChatSidebar() {
             <SidebarMenuItem key={chat.id}>
               <SidebarMenuButton 
                 onClick={() => handleChatSelect(chat.id)} 
-                isActive={params.chatId === chat.id}
+                isActive={chatId === chat.id}
                 className="w-full justify-start"
               >
                 <MessageSquare className="h-4 w-4" />
