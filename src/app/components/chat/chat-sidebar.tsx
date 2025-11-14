@@ -46,16 +46,27 @@ export default function ChatSidebar() {
     if (storedChats) {
       setChats(JSON.parse(storedChats));
     }
-  }, []);
+  }, [chatId]); // Also update when chatId changes to refresh the list
 
   const handleLogout = async () => {
     await signOut(auth);
-    localStorage.removeItem('userName');
+    localStorage.removeItem('chats'); // Clear chats on logout
     router.push('/login');
   };
 
   const handleNewChat = () => {
     const newChatId = uuidv4();
+    const newChat: Chat = {
+      id: newChatId,
+      title: 'New Chat',
+      messages: [],
+    };
+
+    // Add the new chat to state and local storage immediately
+    const updatedChats = [newChat, ...chats];
+    setChats(updatedChats);
+    localStorage.setItem('chats', JSON.stringify(updatedChats));
+
     router.push(`/${newChatId}`);
     if (isMobile) {
       setOpenMobile(false);

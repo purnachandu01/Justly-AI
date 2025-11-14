@@ -1,7 +1,7 @@
 'use client';
 import ChatInput from '@/app/components/chat/chat-input';
 import ChatMessages from '@/app/components/chat/chat-messages';
-import { type Message } from '@/lib/mock-data';
+import { type Message, type Chat } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useParams, useRouter } from 'next/navigation';
@@ -25,8 +25,8 @@ export default function ChatPage() {
     if (!chatId) return;
     const storedChats = localStorage.getItem('chats');
     if (storedChats) {
-      const chats = JSON.parse(storedChats);
-      const currentChat = chats.find((chat: any) => chat.id === chatId);
+      const chats: Chat[] = JSON.parse(storedChats);
+      const currentChat = chats.find((chat) => chat.id === chatId);
       if (currentChat) {
         setMessages(currentChat.messages);
       } else {
@@ -48,13 +48,18 @@ export default function ChatPage() {
 
     // Persist to local storage
     const storedChats = localStorage.getItem('chats');
-    let chats = storedChats ? JSON.parse(storedChats) : [];
-    const chatIndex = chats.findIndex((chat: any) => chat.id === chatId);
+    let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
+    const chatIndex = chats.findIndex((chat) => chat.id === chatId);
 
     if (chatIndex > -1) {
+      // If it's the first message in a "New Chat", update the title
+      if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
+        chats[chatIndex].title = content.substring(0, 30);
+      }
       chats[chatIndex].messages = updatedMessages;
     } else {
-      chats.push({ id: chatId, title: content.substring(0, 30), messages: updatedMessages });
+      // This case should be less frequent now, but kept as a fallback
+      chats.unshift({ id: chatId, title: content.substring(0, 30), messages: updatedMessages });
     }
     localStorage.setItem('chats', JSON.stringify(chats));
 
@@ -91,7 +96,7 @@ export default function ChatPage() {
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
 
-      const updatedChatIndex = chats.findIndex((chat: any) => chat.id === chatId);
+      const updatedChatIndex = chats.findIndex((chat) => chat.id === chatId);
       if(updatedChatIndex > -1) {
         chats[updatedChatIndex].messages = finalMessages;
         localStorage.setItem('chats', JSON.stringify(chats));
