@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from "@/firebase";
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { GoogleIcon } from "@/app/components/google-icon";
 
@@ -22,6 +22,28 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      setGoogleLoading(true);
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          router.push('/1');
+        }
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Google Sign-Up Failed",
+          description: error.message,
+        });
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+    if (auth) {
+      handleRedirectResult();
+    }
+  }, [auth, router, toast]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,19 +69,8 @@ export default function SignupPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/1');
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Google Sign-Up Failed",
-        description: error.message,
-      });
-    } finally {
-      setGoogleLoading(false);
-    }
+    const provider = new GoogleAuthProvider();
+    await signInWithRedirect(auth, provider);
   };
 
   return (
