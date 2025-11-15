@@ -23,6 +23,9 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!chatId) return;
+
+    localStorage.setItem('lastChatId', chatId);
+
     const storedChats = localStorage.getItem('chats');
     if (storedChats) {
       const chats: Chat[] = JSON.parse(storedChats);
@@ -30,16 +33,12 @@ export default function ChatPage() {
       if (currentChat) {
         setMessages(currentChat.messages);
       } else {
-        // If chat doesn't exist, maybe it's a new chat.
-        // The sidebar should have created it.
-        // We can handle creating it here if it doesn't exist for robustness.
         const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
         const updatedChats = [newChat, ...chats];
         localStorage.setItem('chats', JSON.stringify(updatedChats));
         setMessages([]);
       }
     } else {
-        // No chats exist at all, create this new one.
         const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
         localStorage.setItem('chats', JSON.stringify([newChat]));
         setMessages([]);
@@ -57,19 +56,16 @@ export default function ChatPage() {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
-    // Persist to local storage
     const storedChats = localStorage.getItem('chats');
     let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
     const chatIndex = chats.findIndex((chat) => chat.id === chatId);
 
     if (chatIndex > -1) {
-      // If it's the first message in a "New Chat", update the title
       if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
         chats[chatIndex].title = content.substring(0, 30);
       }
       chats[chatIndex].messages = updatedMessages;
     } else {
-      // This case should be less frequent now, but kept as a fallback
       chats.unshift({ id: chatId, title: content.substring(0, 30), messages: updatedMessages });
     }
     localStorage.setItem('chats', JSON.stringify(chats));
@@ -94,8 +90,6 @@ export default function ChatPage() {
         aiContent = data.output || data.textResponse;
       } else if (data && data.reply) {
         aiContent = data.reply;
-      } else if (data) {
-        aiContent = JSON.stringify(data);
       }
       
       const aiMessage: Message = {

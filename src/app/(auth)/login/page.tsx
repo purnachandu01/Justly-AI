@@ -19,18 +19,21 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(true); // Start loading until redirect is checked
+  const [googleLoading, setGoogleLoading] = useState(true); // Start loading to check for redirect
 
   useEffect(() => {
+    if (!auth) return;
+
     const handleRedirectResult = async () => {
-      if (!auth) return;
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // This will keep the loading state until the redirect to '/' happens
-          router.push('/');
+          // User has successfully signed in via redirect.
+          // The onAuthStateChanged listener will handle the redirect to '/'
+          // so we just need to wait.
+          // No need to call router.push here, it's handled by the auth state listener globally.
         } else {
-          // If there's no result, it means the user is just visiting the page, not coming from a redirect.
+          // No redirect result, so the user is just viewing the login page.
           setGoogleLoading(false);
         }
       } catch (error: any) {
@@ -42,6 +45,7 @@ export default function LoginPage() {
         setGoogleLoading(false);
       }
     };
+
     handleRedirectResult();
   }, [auth, router, toast]);
 

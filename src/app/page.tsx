@@ -1,6 +1,26 @@
-import { redirect } from 'next/navigation'
+'use client';
+
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function Home() {
-  // Redirect to the login page as the default entry point
-  redirect('/login')
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading) {
+      if (user) {
+        router.push('/' + (localStorage.getItem('lastChatId') || ''));
+      } else {
+        router.push('/login');
+      }
+    }
+  }, [isUserLoading, user, router]);
+
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <p>Loading...</p>
+    </div>
+  );
 }

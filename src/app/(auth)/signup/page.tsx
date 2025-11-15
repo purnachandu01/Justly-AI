@@ -20,16 +20,20 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(true); // Start loading to check for redirect
 
   useEffect(() => {
+    if (!auth) return;
+    
     const handleRedirectResult = async () => {
-      if (!auth) return;
-      setGoogleLoading(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          router.push('/');
+          // User has successfully signed in via redirect.
+          // The onAuthStateChanged listener will handle the redirect to '/'
+        } else {
+          // No redirect result, so the user is just viewing the signup page.
+          setGoogleLoading(false);
         }
       } catch (error: any) {
         toast({
@@ -37,15 +41,16 @@ export default function SignupPage() {
           title: "Google Sign-Up Failed",
           description: error.message,
         });
-      } finally {
         setGoogleLoading(false);
       }
     };
+    
     handleRedirectResult();
   }, [auth, router, toast]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) return;
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -67,10 +72,19 @@ export default function SignupPage() {
   }
 
   const handleGoogleSignIn = async () => {
+    if (!auth) return;
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
   };
+
+  if (googleLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <p>Signing in...</p>
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full max-w-sm border-2 border-border">
@@ -93,7 +107,7 @@ export default function SignupPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.targe.value)} />
           </div>
           <Button type="submit" className="w-full" disabled={loading || googleLoading}>
             {loading ? 'Signing up...' : 'Sign Up'}
@@ -112,14 +126,10 @@ export default function SignupPage() {
         </div>
 
         <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || googleLoading}>
-          {googleLoading ? (
-            'Signing in...'
-          ) : (
-            <>
-              <GoogleIcon className="mr-2 h-4 w-4" />
-              Google
-            </>
-          )}
+          <>
+            <GoogleIcon className="mr-2 h-4 w-4" />
+            Google
+          </>
         </Button>
 
         <div className="mt-4 text-center text-sm">

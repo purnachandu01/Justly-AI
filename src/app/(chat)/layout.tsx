@@ -1,3 +1,4 @@
+'use client';
 import ChatSidebar from '@/app/components/chat/chat-sidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
@@ -5,8 +6,28 @@ import {
   Sidebar,
   SidebarInset,
 } from '@/components/ui/sidebar';
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
