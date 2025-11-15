@@ -86,10 +86,8 @@ export default function ChatPage() {
 
       const data = await response.json();
       let aiContent = "Sorry, I couldn't get a response.";
-      if (data && (data.output || data.textResponse)) {
-        aiContent = data.output || data.textResponse;
-      } else if (data && data.reply) {
-        aiContent = data.reply;
+      if (data && (data.output || data.textResponse || data.reply)) {
+        aiContent = data.output || data.textResponse || data.reply;
       }
       
       const aiMessage: Message = {
