@@ -24,11 +24,12 @@ export default function SignupPage() {
 
   useEffect(() => {
     const handleRedirectResult = async () => {
+      if (!auth) return;
       setGoogleLoading(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          router.push('/1');
+          router.push('/');
         }
       } catch (error: any) {
         toast({
@@ -40,9 +41,7 @@ export default function SignupPage() {
         setGoogleLoading(false);
       }
     };
-    if (auth) {
-      handleRedirectResult();
-    }
+    handleRedirectResult();
   }, [auth, router, toast]);
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -55,7 +54,7 @@ export default function SignupPage() {
           displayName: name
         });
       }
-      router.push('/1');
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: "destructive",

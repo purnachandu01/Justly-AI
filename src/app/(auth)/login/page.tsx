@@ -23,11 +23,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     const handleRedirectResult = async () => {
+      if (!auth) return;
       setGoogleLoading(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          router.push('/1');
+          router.push('/');
         }
       } catch (error: any) {
         toast({
@@ -39,9 +40,7 @@ export default function LoginPage() {
         setGoogleLoading(false);
       }
     };
-    if (auth) {
-      handleRedirectResult();
-    }
+    handleRedirectResult();
   }, [auth, router, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -49,7 +48,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/1');
+      router.push('/');
     } catch (error: any) {
       toast({
         variant: "destructive",
