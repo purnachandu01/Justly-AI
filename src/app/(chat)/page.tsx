@@ -15,7 +15,7 @@ export default function ChatHomePage() {
   }, [isUserLoading, user, router]);
   
   if (isUserLoading || !user) {
-    return <div>Loading...</div>;
+    return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 
   return (

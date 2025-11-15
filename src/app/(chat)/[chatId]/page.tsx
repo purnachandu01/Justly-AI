@@ -30,8 +30,19 @@ export default function ChatPage() {
       if (currentChat) {
         setMessages(currentChat.messages);
       } else {
+        // If chat doesn't exist, maybe it's a new chat.
+        // The sidebar should have created it.
+        // We can handle creating it here if it doesn't exist for robustness.
+        const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
+        const updatedChats = [newChat, ...chats];
+        localStorage.setItem('chats', JSON.stringify(updatedChats));
         setMessages([]);
       }
+    } else {
+        // No chats exist at all, create this new one.
+        const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
+        localStorage.setItem('chats', JSON.stringify([newChat]));
+        setMessages([]);
     }
   }, [chatId]);
 
@@ -116,7 +127,7 @@ export default function ChatPage() {
   };
 
   if (isUserLoading || !user) {
-    return <div>Loading...</div>;
+    return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 
   return (

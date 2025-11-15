@@ -19,16 +19,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(true); // Start loading until redirect is checked
 
   useEffect(() => {
     const handleRedirectResult = async () => {
       if (!auth) return;
-      setGoogleLoading(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
+          // This will keep the loading state until the redirect to '/' happens
           router.push('/');
+        } else {
+          // If there's no result, it means the user is just visiting the page, not coming from a redirect.
+          setGoogleLoading(false);
         }
       } catch (error: any) {
         toast({
@@ -36,7 +39,6 @@ export default function LoginPage() {
           title: "Google Sign-In Failed",
           description: error.message,
         });
-      } finally {
         setGoogleLoading(false);
       }
     };
@@ -45,6 +47,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth) return;
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -61,10 +64,19 @@ export default function LoginPage() {
   }
 
   const handleGoogleSignIn = async () => {
+    if (!auth) return;
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
   };
+  
+  if (googleLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <p>Signing in...</p>
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full max-w-sm border-2 border-border">
@@ -85,7 +97,7 @@ export default function LoginPage() {
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Logging in...' : 'Login'}
           </Button>
         </form>
@@ -101,15 +113,11 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || googleLoading}>
-          {googleLoading ? (
-            'Signing in...'
-          ) : (
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
             <>
               <GoogleIcon className="mr-2 h-4 w-4" />
               Google
             </>
-          )}
         </Button>
 
         <div className="mt-4 text-center text-sm">
