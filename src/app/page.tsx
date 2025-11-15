@@ -12,9 +12,7 @@ export default function Home() {
     if (!isUserLoading) {
       if (user) {
         // If the user is logged in, redirect them to the main chat interface.
-        // The chat interface itself will handle whether to show a welcome screen
-        // or a specific chat.
-        router.push('/');
+        router.push('/chat');
       } else {
         // If no user, redirect to login.
         router.push('/login');

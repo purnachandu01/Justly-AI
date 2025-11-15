@@ -67,14 +67,14 @@ export default function ChatSidebar() {
     setChats(updatedChats);
     localStorage.setItem('chats', JSON.stringify(updatedChats));
 
-    router.push(`/${newChatId}`);
+    router.push(`/chat/${newChatId}`);
     if (isMobile) {
       setOpenMobile(false);
     }
   };
 
   const handleChatSelect = (selectedChatId: string) => {
-    router.push(`/${selectedChatId}`);
+    router.push(`/chat/${selectedChatId}`);
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -87,7 +87,7 @@ export default function ChatSidebar() {
     localStorage.setItem('chats', JSON.stringify(updatedChats));
 
     if (chatId === chatIdToDelete) {
-      router.push('/');
+      router.push('/chat');
     }
   };
 
