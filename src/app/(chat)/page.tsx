@@ -10,8 +10,15 @@ export default function ChatHomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
+    if (!isUserLoading) {
+      if (user) {
+        const lastChatId = localStorage.getItem('lastChatId');
+        if (lastChatId) {
+          router.replace(`/${lastChatId}`);
+        }
+      } else {
+        router.push('/login');
+      }
     }
   }, [isUserLoading, user, router]);
 
@@ -20,7 +27,7 @@ export default function ChatHomePage() {
     router.push(`/${newChatId}`);
   };
   
-  if (isUserLoading) {
+  if (isUserLoading || (!isUserLoading && user && localStorage.getItem('lastChatId'))) {
     return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 

@@ -11,10 +11,12 @@ export default function Home() {
   useEffect(() => {
     if (!isUserLoading) {
       if (user) {
-        // Redirect to last chat, or to the new chat page if no last chat exists
-        const lastChatId = localStorage.getItem('lastChatId');
-        router.push(lastChatId ? `/${lastChatId}` : '/');
+        // If the user is logged in, redirect them to the main chat interface.
+        // The chat interface itself will handle whether to show a welcome screen
+        // or a specific chat.
+        router.push('/');
       } else {
+        // If no user, redirect to login.
         router.push('/login');
       }
     }
