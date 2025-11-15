@@ -20,9 +20,11 @@ export default function ChatHomePage() {
     router.push(`/${newChatId}`);
   };
   
-  if (isUserLoading || !user) {
+  if (isUserLoading) {
     return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
+
+  // No need to check for user here again, layout will handle it.
 
   return (
     <div className="flex h-full items-center justify-center p-4">

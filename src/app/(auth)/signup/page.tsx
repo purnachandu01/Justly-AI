@@ -31,6 +31,7 @@ export default function SignupPage() {
         if (result) {
           // User has successfully signed in via redirect.
           // The onAuthStateChanged listener will handle the redirect to '/'
+          router.push('/');
         } else {
           // No redirect result, so the user is just viewing the signup page.
           setGoogleLoading(false);

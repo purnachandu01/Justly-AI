@@ -33,12 +33,14 @@ export default function ChatPage() {
       if (currentChat) {
         setMessages(currentChat.messages);
       } else {
+        // This case handles when a new chat is created via URL and isn't in storage yet.
         const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
         const updatedChats = [newChat, ...chats];
         localStorage.setItem('chats', JSON.stringify(updatedChats));
         setMessages([]);
       }
     } else {
+        // This handles the very first chat in the application.
         const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
         localStorage.setItem('chats', JSON.stringify([newChat]));
         setMessages([]);
@@ -56,16 +58,19 @@ export default function ChatPage() {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
+    // Update local storage immediately with the user's message
     const storedChats = localStorage.getItem('chats');
     let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
     const chatIndex = chats.findIndex((chat) => chat.id === chatId);
 
     if (chatIndex > -1) {
+      // If it's the first message in a "New Chat", update the title
       if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
         chats[chatIndex].title = content.substring(0, 30);
       }
       chats[chatIndex].messages = updatedMessages;
     } else {
+      // This should ideally not happen if the useEffect hook runs correctly
       chats.unshift({ id: chatId, title: content.substring(0, 30), messages: updatedMessages });
     }
     localStorage.setItem('chats', JSON.stringify(chats));
@@ -99,9 +104,10 @@ export default function ChatPage() {
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
 
-      const updatedChatIndex = chats.findIndex((chat) => chat.id === chatId);
-      if(updatedChatIndex > -1) {
-        chats[updatedChatIndex].messages = finalMessages;
+      // Update local storage with the AI's response
+      const finalChatIndex = chats.findIndex((chat) => chat.id === chatId);
+      if(finalChatIndex > -1) {
+        chats[finalChatIndex].messages = finalMessages;
         localStorage.setItem('chats', JSON.stringify(chats));
       }
 
@@ -118,7 +124,7 @@ export default function ChatPage() {
     }
   };
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || (!user && isUserLoading)) {
     return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 

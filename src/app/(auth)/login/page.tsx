@@ -29,9 +29,9 @@ export default function LoginPage() {
         const result = await getRedirectResult(auth);
         if (result) {
           // User has successfully signed in via redirect.
-          // The onAuthStateChanged listener will handle the redirect to '/'
-          // so we just need to wait.
-          // No need to call router.push here, it's handled by the auth state listener globally.
+          // The onAuthStateChanged listener in the provider will handle the rest.
+          // We can just wait for the global state to update.
+          router.push('/');
         } else {
           // No redirect result, so the user is just viewing the login page.
           setGoogleLoading(false);

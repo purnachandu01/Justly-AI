@@ -11,7 +11,9 @@ export default function Home() {
   useEffect(() => {
     if (!isUserLoading) {
       if (user) {
-        router.push('/' + (localStorage.getItem('lastChatId') || ''));
+        // Redirect to last chat, or to the new chat page if no last chat exists
+        const lastChatId = localStorage.getItem('lastChatId');
+        router.push(lastChatId ? `/${lastChatId}` : '/');
       } else {
         router.push('/login');
       }
