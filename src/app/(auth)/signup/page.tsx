@@ -20,33 +20,29 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(true); // Start loading to check for redirect
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (!auth) return;
-    
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
+
+    setGoogleLoading(true);
+    getRedirectResult(auth)
+      .then((result) => {
         if (result) {
-          // User has successfully signed in via redirect.
-          // The onAuthStateChanged listener will handle the redirect to '/'
-          router.push('/');
+          // This will trigger the onAuthStateChanged in the provider
+          // and the user will be redirected from there. We just need to wait.
         } else {
-          // No redirect result, so the user is just viewing the signup page.
-          setGoogleLoading(false);
+          setGoogleLoading(false); // No redirect result, so stop loading
         }
-      } catch (error: any) {
+      })
+      .catch((error) => {
         toast({
           variant: "destructive",
           title: "Google Sign-Up Failed",
           description: error.message,
         });
         setGoogleLoading(false);
-      }
-    };
-    
-    handleRedirectResult();
+      });
   }, [auth, router, toast]);
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -60,7 +56,7 @@ export default function SignupPage() {
           displayName: name
         });
       }
-      router.push('/');
+      // The onAuthStateChanged listener will handle the redirect
     } catch (error: any) {
       toast({
         variant: "destructive",

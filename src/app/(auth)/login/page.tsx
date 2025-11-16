@@ -19,34 +19,29 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(true); // Start loading to check for redirect
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     if (!auth) return;
 
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
+    setGoogleLoading(true);
+    getRedirectResult(auth)
+      .then((result) => {
         if (result) {
-          // User has successfully signed in via redirect.
-          // The onAuthStateChanged listener in the provider will handle the rest.
-          // We can just wait for the global state to update.
-          router.push('/');
+          // This will trigger the onAuthStateChanged in the provider
+          // and the user will be redirected from there. We just need to wait.
         } else {
-          // No redirect result, so the user is just viewing the login page.
-          setGoogleLoading(false);
+          setGoogleLoading(false); // No redirect result, so stop loading
         }
-      } catch (error: any) {
+      })
+      .catch((error) => {
         toast({
           variant: "destructive",
           title: "Google Sign-In Failed",
           description: error.message,
         });
         setGoogleLoading(false);
-      }
-    };
-
-    handleRedirectResult();
+      });
   }, [auth, router, toast]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -55,7 +50,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
+      // The onAuthStateChanged listener will handle the redirect
     } catch (error: any) {
       toast({
         variant: "destructive",
