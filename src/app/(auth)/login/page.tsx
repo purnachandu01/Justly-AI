@@ -6,43 +6,31 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from "react";
-import { useAuth } from "@/firebase";
-import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
+import { useState } from "react";
+import { useAuth, useUser } from "@/firebase";
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { GoogleIcon } from "@/app/components/google-icon";
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  useEffect(() => {
-    if (!auth) return;
-
-    setGoogleLoading(true);
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // This will trigger the onAuthStateChanged in the provider
-          // and the user will be redirected from there. We just need to wait.
-        } else {
-          setGoogleLoading(false); // No redirect result, so stop loading
-        }
-      })
-      .catch((error) => {
-        toast({
-          variant: "destructive",
-          title: "Google Sign-In Failed",
-          description: error.message,
-        });
-        setGoogleLoading(false);
-      });
-  }, [auth, router, toast]);
+  // Redirect if user is already logged in
+  if (!isUserLoading && user) {
+    router.push('/chat');
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <p>Redirecting...</p>
+      </div>
+    );
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,14 +38,13 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener will handle the redirect
+      // The onAuthStateChanged listener in the provider will handle the redirect
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Login Failed",
         description: error.message,
       });
-    } finally {
       setLoading(false);
     }
   }
@@ -66,13 +53,14 @@ export default function LoginPage() {
     if (!auth) return;
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
+    // We just initiate the redirect. The result is handled globally.
     await signInWithRedirect(auth, provider);
   };
   
-  if (googleLoading) {
+  if (isUserLoading || googleLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
-        <p>Signing in...</p>
+        <p>Loading...</p>
       </div>
     );
   }
@@ -96,7 +84,7 @@ export default function LoginPage() {
             <Label htmlFor="password">Password</Label>
             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || googleLoading}>
             {loading ? 'Logging in...' : 'Login'}
           </Button>
         </form>
@@ -112,7 +100,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || googleLoading}>
             <>
               <GoogleIcon className="mr-2 h-4 w-4" />
               Google

@@ -6,48 +6,40 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { useAuth } from "@/firebase";
-import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
+import { useState } from 'react';
+import { useAuth, useUser } from "@/firebase";
+import { createUserWithEmailAndPassword, updateProfile, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { GoogleIcon } from "@/app/components/google-icon";
+import { setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { upsertUser } from '@/firebase/user-service';
 
 export default function SignupPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-
-  useEffect(() => {
-    if (!auth) return;
-
-    setGoogleLoading(true);
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // This will trigger the onAuthStateChanged in the provider
-          // and the user will be redirected from there. We just need to wait.
-        } else {
-          setGoogleLoading(false); // No redirect result, so stop loading
-        }
-      })
-      .catch((error) => {
-        toast({
-          variant: "destructive",
-          title: "Google Sign-Up Failed",
-          description: error.message,
-        });
-        setGoogleLoading(false);
-      });
-  }, [auth, router, toast]);
+  
+  if (!isUserLoading && user) {
+    router.push('/chat');
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <p>Redirecting...</p>
+      </div>
+    );
+  }
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
+    if (!auth || !firestore) return;
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -55,6 +47,8 @@ export default function SignupPage() {
         await updateProfile(userCredential.user, {
           displayName: name
         });
+        // Manually create the user document in Firestore
+        await upsertUser(userCredential.user, firestore);
       }
       // The onAuthStateChanged listener will handle the redirect
     } catch (error: any) {
@@ -63,7 +57,6 @@ export default function SignupPage() {
         title: "Signup Failed",
         description: error.message,
       });
-    } finally {
       setLoading(false);
     }
   }
@@ -75,10 +68,10 @@ export default function SignupPage() {
     await signInWithRedirect(auth, provider);
   };
 
-  if (googleLoading) {
+  if (isUserLoading || googleLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
-        <p>Signing in...</p>
+        <p>Loading...</p>
       </div>
     );
   }
