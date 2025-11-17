@@ -21,10 +21,15 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
 
   useEffect(() => {
     const handleRedirect = async () => {
-      if (!firebaseServices.auth) return;
+      if (!firebaseServices.auth || !firebaseServices.firestore) {
+        setIsAuthLoading(false);
+        return;
+      };
+
       try {
         const result = await getRedirectResult(firebaseServices.auth);
         if (result && result.user) {
+          // This is a successful sign-in.
           await upsertUser(result.user, firebaseServices.firestore);
           toast({
             title: "Signed In",
@@ -32,19 +37,35 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
           });
         }
       } catch (error: any) {
+        // This block will catch errors from the redirect result,
+        // including OAuth configuration errors that cause the 403.
         console.error("Error handling redirect result:", error);
-        toast({
-          variant: "destructive",
-          title: "Sign-In Failed",
-          description: error.message || "An unexpected error occurred during sign-in.",
-        });
+
+        // Check for specific OAuth credential errors
+        if (error.code === 'auth/internal-error' || error.code === 'auth/invalid-credential') {
+           toast({
+            variant: "destructive",
+            title: "Sign-In Configuration Error",
+            description: "There seems to be an issue with the project's sign-in configuration. Please check the OAuth settings in your Google Cloud project.",
+            duration: 10000, // Show for 10 seconds
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Sign-In Failed",
+            description: error.message || "An unexpected error occurred during sign-in.",
+          });
+        }
       } finally {
+        // We're done with the auth redirect check, so we can stop loading.
         setIsAuthLoading(false);
       }
     };
 
     handleRedirect();
-  }, [firebaseServices.auth, firebaseServices.firestore, toast]);
+    // The dependency array is intentionally sparse. We only want this to run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   if (isAuthLoading) {
     return (
