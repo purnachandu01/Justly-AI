@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Logo } from "@/app/components/logo";
 import { useRouter } from 'next/navigation';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@/firebase";
 import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -22,15 +22,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Redirect if user is already logged in
-  if (!isUserLoading && user) {
-    router.push('/chat');
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
-        <p>Redirecting...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    // Redirect if user is already logged in
+    if (!isUserLoading && user) {
+      router.push('/chat');
+    }
+  }, [isUserLoading, user, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +50,20 @@ export default function LoginPage() {
     if (!auth) return;
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    // We just initiate the redirect. The result is handled globally.
-    await signInWithRedirect(auth, provider);
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (error: any) {
+      console.error(error);
+      setGoogleLoading(false);
+      toast({
+        variant: "destructive",
+        title: "Google Sign-In Failed",
+        description: "Could not initiate Google Sign-In. Please try again.",
+      });
+    }
   };
   
-  if (isUserLoading || googleLoading) {
+  if (isUserLoading || user) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
         <p>Loading...</p>
@@ -66,54 +72,58 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full max-w-sm border-2 border-border">
-      <CardHeader className="text-center">
-        <div className="mb-4 flex justify-center">
-          <Logo />
-        </div>
-        <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
-        <CardDescription>Enter your credentials to access your account.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm border-2 border-border">
+        <CardHeader className="text-center">
+          <div className="mb-4 flex justify-center">
+            <Logo />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <CardTitle className="font-headline text-2xl">Welcome Back</CardTitle>
+          <CardDescription>Enter your credentials to access your account.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+              {loading ? 'Logging in...' : 'Login'}
+            </Button>
+          </form>
+
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
           </div>
-          <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-            {loading ? 'Logging in...' : 'Login'}
+
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || googleLoading}>
+            {googleLoading ? "Redirecting..." : (
+              <>
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                Google
+              </>
+            )}
           </Button>
-        </form>
 
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+          <div className="mt-4 text-center text-sm">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="underline text-primary hover:text-primary/80">
+              Sign up
+            </Link>
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || googleLoading}>
-            <>
-              <GoogleIcon className="mr-2 h-4 w-4" />
-              Google
-            </>
-        </Button>
-
-        <div className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link href="/signup" className="underline text-primary hover:text-primary/80">
-            Sign up
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </main>
   );
 }
