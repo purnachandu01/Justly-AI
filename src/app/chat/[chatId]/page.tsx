@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/firebase';
-import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
 
 export default function ChatPage() {
   const params = useParams();
@@ -15,7 +14,6 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
 
   useEffect(() => {
@@ -43,13 +41,6 @@ export default function ChatPage() {
         setMessages([]);
     }
   }, [chatId, user]); // Depend on user as well
-
-  const playAudio = (audioDataUri: string) => {
-    if (audioRef.current) {
-        audioRef.current.src = audioDataUri;
-        audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
-    }
-  };
 
   const handleSendMessage = async (content: string) => {
     setIsSending(true);
@@ -121,12 +112,6 @@ export default function ChatPage() {
         return newMessages;
       });
 
-      // Generate and play audio
-      const audioResponse = await textToSpeech(aiContent);
-      if (audioResponse?.media) {
-        playAudio(audioResponse.media);
-      }
-
     } catch (error: any) {
         console.error("Error in handleSendMessage:", error);
         const errorMessage: Message = {
@@ -157,7 +142,6 @@ export default function ChatPage() {
 
   return (
     <div className="relative flex h-full flex-col">
-      <audio ref={audioRef} className="hidden" />
       <div className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-32">
         <ChatMessages messages={messages} />
       </div>
