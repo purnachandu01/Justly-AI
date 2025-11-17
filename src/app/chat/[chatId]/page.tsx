@@ -16,13 +16,7 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
-
-  useEffect(() => {
-    if (!chatId) return;
+    if (!chatId || !user) return; // Wait for chatId and user
 
     localStorage.setItem('lastChatId', chatId);
 
@@ -40,12 +34,12 @@ export default function ChatPage() {
         setMessages([]);
       }
     } else {
-        // This handles the very first chat in the application.
+        // This handles the very first chat in the application for this user.
         const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
         localStorage.setItem('chats', JSON.stringify([newChat]));
         setMessages([]);
     }
-  }, [chatId]);
+  }, [chatId, user]); // Depend on user as well
 
   const handleSendMessage = async (content: string) => {
     setIsSending(true);
@@ -124,7 +118,9 @@ export default function ChatPage() {
     }
   };
 
-  if (isUserLoading || (!user && isUserLoading)) {
+  // The main layout already handles the loading/redirect for the user state
+  // So we only need to show loading if we are waiting for user state to be confirmed
+  if (isUserLoading) {
     return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 

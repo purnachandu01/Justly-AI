@@ -20,20 +20,10 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
     }
   }, [isUserLoading, user, router]);
 
-  if (isUserLoading) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p>Loading...</p>
-      </div>
-    );
-  }
-  
-  if (!user) {
-    // This can be a redirect or a null render, but loading screen is better
-    // to avoid flicker if auth state is just taking a moment.
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Redirecting to login...</p>
       </div>
     );
   }

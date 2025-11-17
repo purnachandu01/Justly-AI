@@ -11,10 +11,8 @@ export default function Home() {
   useEffect(() => {
     if (!isUserLoading) {
       if (user) {
-        // If the user is logged in, redirect them to the main chat interface.
         router.push('/chat');
       } else {
-        // If no user, redirect to login.
         router.push('/login');
       }
     }
