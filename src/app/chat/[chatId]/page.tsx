@@ -63,7 +63,7 @@ export default function ChatPage() {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
-    // Update local storage immediately with the user's message
+    // This logic needs to be inside the async function to correctly update state and localStorage
     const storedChats = localStorage.getItem('chats');
     let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
     const chatIndex = chats.findIndex((chat) => chat.id === chatId);
@@ -74,11 +74,14 @@ export default function ChatPage() {
       }
       chats[chatIndex].messages = updatedMessages;
     } else {
-      chats.unshift({ id: chatId, title: content.substring(0, 30), messages: updatedMessages });
+      // Create a new chat if it doesn't exist
+      const newChat: Chat = { id: chatId, title: content.substring(0, 30), messages: updatedMessages };
+      chats.unshift(newChat);
     }
     localStorage.setItem('chats', JSON.stringify(chats));
 
     try {
+      // Fetch AI response
       const response = await fetch("https://saitejarr.app.n8n.cloud/webhook/a54d3e1f-3850-4e08-a8e2-5b6b91b8e967/chat", {
         method: "POST",
         headers: {
@@ -92,6 +95,10 @@ export default function ChatPage() {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`);
+      }
+
       const data = await response.json();
       const aiContent = data.output || data.textResponse || data.reply || "Sorry, I couldn't get a response.";
       
@@ -101,15 +108,18 @@ export default function ChatPage() {
         content: aiContent,
       };
       
-      // Update UI with AI message
-      setMessages(prevMessages => [...prevMessages, aiMessage]);
-
-      // Update local storage with the AI's response
-      const finalChatIndex = chats.findIndex((chat) => chat.id === chatId);
-      if(finalChatIndex > -1) {
-        chats[finalChatIndex].messages.push(aiMessage);
-        localStorage.setItem('chats', JSON.stringify(chats));
-      }
+      // Update UI and local storage with AI message
+      setMessages(prevMessages => {
+        const newMessages = [...prevMessages, aiMessage];
+        // Update localStorage inside the state setter to ensure it has the latest messages
+        const currentChats = JSON.parse(localStorage.getItem('chats') || '[]');
+        const currentChatIndex = currentChats.findIndex((c: Chat) => c.id === chatId);
+        if (currentChatIndex > -1) {
+          currentChats[currentChatIndex].messages = newMessages;
+          localStorage.setItem('chats', JSON.stringify(currentChats));
+        }
+        return newMessages;
+      });
 
       // Generate and play audio
       const audioResponse = await textToSpeech(aiContent);
@@ -118,13 +128,25 @@ export default function ChatPage() {
       }
 
     } catch (error: any) {
+        console.error("Error in handleSendMessage:", error);
         const errorMessage: Message = {
             id: uuidv4(),
             role: 'ai',
             content: `Error: ${error.message}`,
         };
-        setMessages(prevMessages => [...prevMessages, errorMessage]);
+        // Update UI and localStorage with the error message
+        setMessages(prevMessages => {
+            const newMessages = [...prevMessages, errorMessage];
+            const currentChats = JSON.parse(localStorage.getItem('chats') || '[]');
+            const currentChatIndex = currentChats.findIndex((c: Chat) => c.id === chatId);
+            if (currentChatIndex > -1) {
+                currentChats[currentChatIndex].messages = newMessages;
+                localStorage.setItem('chats', JSON.stringify(currentChats));
+            }
+            return newMessages;
+        });
     } finally {
+        // This is crucial: always re-enable the input
         setIsSending(false);
     }
   };
