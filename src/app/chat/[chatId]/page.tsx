@@ -2,18 +2,21 @@
 import ChatInput from '@/app/components/chat/chat-input';
 import ChatMessages from '@/app/components/chat/chat-messages';
 import { type Message, type Chat } from '@/lib/mock-data';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useUser } from '@/firebase';
+import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
 
 export default function ChatPage() {
   const params = useParams();
-  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const chatId = params.chatId as string;
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
 
   useEffect(() => {
     if (!chatId || !user) return; // Wait for chatId and user
@@ -41,8 +44,16 @@ export default function ChatPage() {
     }
   }, [chatId, user]); // Depend on user as well
 
+  const playAudio = (audioDataUri: string) => {
+    if (audioRef.current) {
+        audioRef.current.src = audioDataUri;
+        audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+    }
+  };
+
   const handleSendMessage = async (content: string) => {
     setIsSending(true);
+    setInputValue(""); // Clear input after sending
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
@@ -58,13 +69,11 @@ export default function ChatPage() {
     const chatIndex = chats.findIndex((chat) => chat.id === chatId);
 
     if (chatIndex > -1) {
-      // If it's the first message in a "New Chat", update the title
       if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
         chats[chatIndex].title = content.substring(0, 30);
       }
       chats[chatIndex].messages = updatedMessages;
     } else {
-      // This should ideally not happen if the useEffect hook runs correctly
       chats.unshift({ id: chatId, title: content.substring(0, 30), messages: updatedMessages });
     }
     localStorage.setItem('chats', JSON.stringify(chats));
@@ -84,10 +93,7 @@ export default function ChatPage() {
       });
 
       const data = await response.json();
-      let aiContent = "Sorry, I couldn't get a response.";
-      if (data && (data.output || data.textResponse || data.reply)) {
-        aiContent = data.output || data.textResponse || data.reply;
-      }
+      const aiContent = data.output || data.textResponse || data.reply || "Sorry, I couldn't get a response.";
       
       const aiMessage: Message = {
         id: uuidv4(),
@@ -95,14 +101,20 @@ export default function ChatPage() {
         content: aiContent,
       };
       
-      const finalMessages = [...updatedMessages, aiMessage];
-      setMessages(finalMessages);
+      // Update UI with AI message
+      setMessages(prevMessages => [...prevMessages, aiMessage]);
 
       // Update local storage with the AI's response
       const finalChatIndex = chats.findIndex((chat) => chat.id === chatId);
       if(finalChatIndex > -1) {
-        chats[finalChatIndex].messages = finalMessages;
+        chats[finalChatIndex].messages.push(aiMessage);
         localStorage.setItem('chats', JSON.stringify(chats));
+      }
+
+      // Generate and play audio
+      const audioResponse = await textToSpeech(aiContent);
+      if (audioResponse?.media) {
+        playAudio(audioResponse.media);
       }
 
     } catch (error: any) {
@@ -111,27 +123,30 @@ export default function ChatPage() {
             role: 'ai',
             content: `Error: ${error.message}`,
         };
-        const finalMessages = [...updatedMessages, errorMessage];
-        setMessages(finalMessages);
+        setMessages(prevMessages => [...prevMessages, errorMessage]);
     } finally {
         setIsSending(false);
     }
   };
 
-  // The main layout already handles the loading/redirect for the user state
-  // So we only need to show loading if we are waiting for user state to be confirmed
   if (isUserLoading) {
     return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 
   return (
     <div className="relative flex h-full flex-col">
+      <audio ref={audioRef} className="hidden" />
       <div className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-32">
         <ChatMessages messages={messages} />
       </div>
       <div className="absolute bottom-0 left-0 w-full border-t border-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto max-w-3xl p-4 md:p-6">
-          <ChatInput onSendMessage={handleSendMessage} isSending={isSending} />
+          <ChatInput 
+            onSendMessage={handleSendMessage} 
+            isSending={isSending}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+          />
         </div>
       </div>
     </div>
