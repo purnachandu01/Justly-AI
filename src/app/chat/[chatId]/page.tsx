@@ -2,7 +2,7 @@
 import ChatInput from '@/app/components/chat/chat-input';
 import ChatMessages from '@/app/components/chat/chat-messages';
 import { type Message, type Chat } from '@/lib/mock-data';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/firebase';
