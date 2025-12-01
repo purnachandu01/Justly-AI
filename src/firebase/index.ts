@@ -3,41 +3,43 @@
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore } from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
-    let firebaseApp;
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
+  let firebaseApp;
+  try {
+    if (!getApps().length) {
+      // Important! initializeApp() can be called without arguments in a Firebase-hosted environment
+      // to automatically use the environment variables.
       firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
+    } else {
+      firebaseApp = getApp();
+    }
+  } catch (e) {
+    // If automatic initialization fails, fall back to the config object.
+    // This is common in local development.
+    if (getApps().length) {
+      firebaseApp = getApp();
+    } else {
       firebaseApp = initializeApp(firebaseConfig);
     }
-
-    return getSdks(firebaseApp);
   }
-
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
+  return getSdks(firebaseApp);
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
-  return {
-    firebaseApp,
-    auth: getAuth(firebaseApp),
-    firestore: getFirestore(firebaseApp)
-  };
+  try {
+    return {
+      firebaseApp,
+      auth: getAuth(firebaseApp),
+      firestore: getFirestore(firebaseApp),
+    };
+  } catch (e) {
+    console.error('Failed to get Firebase SDKs:', e);
+    // Return nulls or throw a custom error to be handled by the provider
+    return { firebaseApp: null, auth: null, firestore: null };
+  }
 }
 
 export * from './provider';
@@ -49,4 +51,3 @@ export * from './non-blocking-login';
 export * from './errors';
 export * from './error-emitter';
 export * from './user-service';
-
