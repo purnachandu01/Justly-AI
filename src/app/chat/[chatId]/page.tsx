@@ -43,6 +43,7 @@ export default function ChatPage() {
   }, [chatId, user]); // Depend on user as well
 
   const handleSendMessage = async (content: string) => {
+    if (!content.trim()) return;
     setIsSending(true);
     setInputValue(""); // Clear input after sending
     const userMessage: Message = {
@@ -73,7 +74,7 @@ export default function ChatPage() {
 
     try {
       // Fetch AI response
-      const response = await fetch("https://saitejarr.app.n8n.cloud/webhook/a54d3e1f-3850-4e08-a8e2-5b6b91b8e967/chat", {
+      const response = await fetch("https://sample213.app.n8n.cloud/webhook/451004fb-ad08-4f73-95fd-8fc06cf44a05/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,7 +132,6 @@ export default function ChatPage() {
             return newMessages;
         });
     } finally {
-        // This is crucial: always re-enable the input
         setIsSending(false);
     }
   };
