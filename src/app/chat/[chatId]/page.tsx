@@ -74,7 +74,7 @@ export default function ChatPage() {
 
     try {
       // Fetch AI response
-      const response = await fetch("https://sample213.app.n8n.cloud/webhook/451004fb-ad08-4f73-95fd-8fc06cf44a05/chat", {
+      const response = await fetch("https://bhargavi01.app.n8n.cloud/webhook/13b7d625-8215-4644-98db-d22d00966cd6/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
