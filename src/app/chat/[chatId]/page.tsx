@@ -19,9 +19,10 @@ export default function ChatPage() {
 
   useEffect(() => {
     // This effect now handles all localStorage interactions and only runs on the client
-    if (!chatId || !user) return; // Wait for chatId and user
+    if (typeof window === 'undefined' || !chatId || !user) {
+      return;
+    }
 
-    // Mark as loaded to prevent server-side execution of localStorage
     setHasLoaded(true); 
 
     localStorage.setItem('lastChatId', chatId);
@@ -42,7 +43,7 @@ export default function ChatPage() {
   }, [chatId, user]);
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim() || !hasLoaded) return; // Also check if client has loaded
+    if (!content.trim() || !hasLoaded) return;
     setIsSending(true);
     setInputValue("");
 
@@ -52,27 +53,28 @@ export default function ChatPage() {
       content,
     };
 
-    // Optimistically update UI
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
-    // Persist to localStorage
-    const storedChats = localStorage.getItem('chats');
-    let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
-    const chatIndex = chats.findIndex((chat) => chat.id === chatId);
+    // Persist user message to localStorage
+    try {
+        const storedChats = localStorage.getItem('chats');
+        let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
+        const chatIndex = chats.findIndex((chat) => chat.id === chatId);
 
-    if (chatIndex > -1) {
-      // If it's the first message in a "New Chat", update the title
-      if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
-        chats[chatIndex].title = content.substring(0, 30);
-      }
-      chats[chatIndex].messages = updatedMessages;
-    } else {
-      // This case should be rare now, but as a fallback
-      const newChat: Chat = { id: chatId, title: content.substring(0, 30), messages: updatedMessages };
-      chats.unshift(newChat);
+        if (chatIndex > -1) {
+            if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
+                chats[chatIndex].title = content.substring(0, 30);
+            }
+            chats[chatIndex].messages = updatedMessages;
+        } else {
+            const newChat: Chat = { id: chatId, title: content.substring(0, 30), messages: updatedMessages };
+            chats.unshift(newChat);
+        }
+        localStorage.setItem('chats', JSON.stringify(chats));
+    } catch (error) {
+        console.error("Error saving user message to localStorage:", error);
     }
-    localStorage.setItem('chats', JSON.stringify(chats));
     
 
     try {
@@ -95,8 +97,13 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
-      const aiContent = data.output || data.textResponse || data.reply || "Sorry, I couldn't get a response.";
+      let aiContent = data.output || data.textResponse || data.reply || "Sorry, I couldn't get a response.";
       
+      // Ensure aiContent is a string. If it's an object, stringify it.
+      if (typeof aiContent === 'object') {
+        aiContent = "```json\n" + JSON.stringify(aiContent, null, 2) + "\n```";
+      }
+
       const aiMessage: Message = {
         id: uuidv4(),
         role: 'ai',
@@ -125,18 +132,22 @@ export default function ChatPage() {
         const finalMessages = [...updatedMessages, errorMessage];
         setMessages(finalMessages);
 
-        const finalChats = JSON.parse(localStorage.getItem('chats') || '[]');
-        const finalChatIndex = finalChats.findIndex((c: Chat) => c.id === chatId);
-        if (finalChatIndex > -1) {
-            finalChats[finalChatIndex].messages = finalMessages;
-            localStorage.setItem('chats', JSON.stringify(finalChats));
+        try {
+            const finalChats = JSON.parse(localStorage.getItem('chats') || '[]');
+            const finalChatIndex = finalChats.findIndex((c: Chat) => c.id === chatId);
+            if (finalChatIndex > -1) {
+                finalChats[finalChatIndex].messages = finalMessages;
+                localStorage.setItem('chats', JSON.stringify(finalChats));
+            }
+        } catch (localError) {
+             console.error("Error saving error message to localStorage:", localError);
         }
     } finally {
         setIsSending(false);
     }
   };
 
-  if (isUserLoading || !hasLoaded) { // Show loading until client has loaded localStorage
+  if (isUserLoading || !hasLoaded) {
     return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 
