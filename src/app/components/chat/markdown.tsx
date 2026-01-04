@@ -3,8 +3,9 @@
 import React from 'react';
 
 // A simple and safe markdown to HTML converter
-const markdownToHtml = (text: string) => {
-  if (!text) return '';
+const markdownToHtml = (text: unknown) => {
+    if (typeof text !== 'string' || !text) return '';
+
 
   let html = text
     // Escape HTML to prevent XSS
