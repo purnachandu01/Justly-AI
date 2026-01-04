@@ -14,63 +14,66 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [hasLoaded, setHasLoaded] = useState(false); // New state to track client-side load
 
 
   useEffect(() => {
+    // This effect now handles all localStorage interactions and only runs on the client
     if (!chatId || !user) return; // Wait for chatId and user
+
+    // Mark as loaded to prevent server-side execution of localStorage
+    setHasLoaded(true); 
 
     localStorage.setItem('lastChatId', chatId);
 
     const storedChats = localStorage.getItem('chats');
-    if (storedChats) {
-      const chats: Chat[] = JSON.parse(storedChats);
-      const currentChat = chats.find((chat) => chat.id === chatId);
-      if (currentChat) {
-        setMessages(currentChat.messages);
-      } else {
-        // This case handles when a new chat is created via URL and isn't in storage yet.
-        const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
-        const updatedChats = [newChat, ...chats];
-        localStorage.setItem('chats', JSON.stringify(updatedChats));
-        setMessages([]);
-      }
+    let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
+
+    const currentChat = chats.find((chat) => chat.id === chatId);
+    if (currentChat) {
+      setMessages(currentChat.messages);
     } else {
-        // This handles the very first chat in the application for this user.
-        const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
-        localStorage.setItem('chats', JSON.stringify([newChat]));
-        setMessages([]);
+      // Chat doesn't exist, create it.
+      const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
+      chats.unshift(newChat); // Add to the beginning of the array
+      localStorage.setItem('chats', JSON.stringify(chats));
+      setMessages([]);
     }
-  }, [chatId, user]); // Depend on user as well
+  }, [chatId, user]);
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim() || !hasLoaded) return; // Also check if client has loaded
     setIsSending(true);
-    setInputValue(""); // Clear input after sending
+    setInputValue("");
+
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
       content,
     };
 
+    // Optimistically update UI
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
-    // This logic needs to be inside the async function to correctly update state and localStorage
+    // Persist to localStorage
     const storedChats = localStorage.getItem('chats');
     let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
     const chatIndex = chats.findIndex((chat) => chat.id === chatId);
 
     if (chatIndex > -1) {
+      // If it's the first message in a "New Chat", update the title
       if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
         chats[chatIndex].title = content.substring(0, 30);
       }
       chats[chatIndex].messages = updatedMessages;
     } else {
-      // Create a new chat if it doesn't exist
+      // This case should be rare now, but as a fallback
       const newChat: Chat = { id: chatId, title: content.substring(0, 30), messages: updatedMessages };
       chats.unshift(newChat);
     }
     localStorage.setItem('chats', JSON.stringify(chats));
+    
 
     try {
       // Fetch AI response
@@ -100,18 +103,16 @@ export default function ChatPage() {
         content: aiContent,
       };
       
-      // Update UI and local storage with AI message
-      setMessages(prevMessages => {
-        const newMessages = [...prevMessages, aiMessage];
-        // Update localStorage inside the state setter to ensure it has the latest messages
-        const currentChats = JSON.parse(localStorage.getItem('chats') || '[]');
-        const currentChatIndex = currentChats.findIndex((c: Chat) => c.id === chatId);
-        if (currentChatIndex > -1) {
-          currentChats[currentChatIndex].messages = newMessages;
-          localStorage.setItem('chats', JSON.stringify(currentChats));
-        }
-        return newMessages;
-      });
+      // Final update to UI and localStorage with AI message
+      const finalMessages = [...updatedMessages, aiMessage];
+      setMessages(finalMessages);
+
+      const finalChats = JSON.parse(localStorage.getItem('chats') || '[]');
+      const finalChatIndex = finalChats.findIndex((c: Chat) => c.id === chatId);
+      if (finalChatIndex > -1) {
+          finalChats[finalChatIndex].messages = finalMessages;
+          localStorage.setItem('chats', JSON.stringify(finalChats));
+      }
 
     } catch (error: any) {
         console.error("Error in handleSendMessage:", error);
@@ -120,23 +121,22 @@ export default function ChatPage() {
             role: 'ai',
             content: `Error: ${error.message}`,
         };
-        // Update UI and localStorage with the error message
-        setMessages(prevMessages => {
-            const newMessages = [...prevMessages, errorMessage];
-            const currentChats = JSON.parse(localStorage.getItem('chats') || '[]');
-            const currentChatIndex = currentChats.findIndex((c: Chat) => c.id === chatId);
-            if (currentChatIndex > -1) {
-                currentChats[currentChatIndex].messages = newMessages;
-                localStorage.setItem('chats', JSON.stringify(currentChats));
-            }
-            return newMessages;
-        });
+        // Final update to UI and localStorage with error message
+        const finalMessages = [...updatedMessages, errorMessage];
+        setMessages(finalMessages);
+
+        const finalChats = JSON.parse(localStorage.getItem('chats') || '[]');
+        const finalChatIndex = finalChats.findIndex((c: Chat) => c.id === chatId);
+        if (finalChatIndex > -1) {
+            finalChats[finalChatIndex].messages = finalMessages;
+            localStorage.setItem('chats', JSON.stringify(finalChats));
+        }
     } finally {
         setIsSending(false);
     }
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || !hasLoaded) { // Show loading until client has loaded localStorage
     return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 
