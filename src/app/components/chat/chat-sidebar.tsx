@@ -31,6 +31,7 @@ import { useEffect, useState }from 'react';
 import { type Chat } from '@/lib/mock-data';
 import { useAuth, useUser } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { SettingsDialog } from './settings-dialog';
 
 export default function ChatSidebar() {
   const router = useRouter();
@@ -39,14 +40,20 @@ export default function ChatSidebar() {
   const { user, isUserLoading } = useUser();
   const { isMobile, setOpenMobile, state } = useSidebar();
   const [chats, setChats] = useState<Chat[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const chatId = params.chatId as string;
 
   useEffect(() => {
-    const storedChats = localStorage.getItem('chats');
-    if (storedChats) {
-      setChats(JSON.parse(storedChats));
-    }
-  }, [chatId]); // Also update when chatId changes to refresh the list
+    const handleStorageChange = () => {
+      const storedChats = localStorage.getItem('chats');
+      setChats(storedChats ? JSON.parse(storedChats) : []);
+    };
+    handleStorageChange(); // Initial load
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -141,7 +148,7 @@ export default function ChatSidebar() {
           <DropdownMenuContent className="w-56 mb-2" align="start" side="right">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setIsSettingsOpen(true)}>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
@@ -153,6 +160,7 @@ export default function ChatSidebar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>
+      <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </>
   );
 }
