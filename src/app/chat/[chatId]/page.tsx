@@ -6,8 +6,6 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/firebase';
-import { LanguageSelector } from '@/app/components/chat/language-selector';
-import { translateText } from '@/ai/flows/translate-flow';
 
 export default function ChatPage() {
   const params = useParams();
@@ -17,8 +15,6 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [language, setLanguage] = useState('English');
-  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && chatId && user) {
@@ -37,27 +33,6 @@ export default function ChatPage() {
       }
     }
   }, [chatId, user]);
-  
-  const handleLanguageChange = async (newLanguage: string) => {
-    setLanguage(newLanguage);
-    setIsTranslating(true);
-    try {
-      const translatedMessages = await Promise.all(
-        messages.map(async (message) => {
-          const translatedContent = await translateText({
-            text: message.content,
-            targetLanguage: newLanguage,
-          });
-          return { ...message, content: translatedContent };
-        })
-      );
-      setMessages(translatedMessages);
-    } catch (error) {
-      console.error("Error translating messages:", error);
-    } finally {
-      setIsTranslating(false);
-    }
-  };
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || !hasLoaded) return;
@@ -103,7 +78,6 @@ export default function ChatPage() {
           sessionId: chatId,
           action: "sendMessage",
           chatInput: content,
-          userLang: language
         }),
       });
 
@@ -159,8 +133,8 @@ export default function ChatPage() {
     }
   };
 
-  if (isUserLoading || !hasLoaded || isTranslating) {
-    return <div className="flex h-full items-center justify-center"><p>{isTranslating ? 'Translating...' : 'Loading...'}</p></div>;
+  if (isUserLoading || !hasLoaded) {
+    return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
   }
 
   return (
@@ -170,13 +144,6 @@ export default function ChatPage() {
       </div>
       <div className="absolute bottom-0 left-0 w-full border-t border-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto max-w-3xl p-4 md:p-6">
-            <div className="pb-2">
-                <LanguageSelector 
-                    selectedLanguage={language}
-                    onLanguageChange={handleLanguageChange}
-                    disabled={isSending || isTranslating}
-                />
-            </div>
           <ChatInput 
             onSendMessage={handleSendMessage} 
             isSending={isSending}
