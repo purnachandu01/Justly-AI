@@ -1,12 +1,13 @@
 'use client';
 import ChatInput from '@/app/components/chat/chat-input';
 import ChatMessages from '@/app/components/chat/chat-messages';
-import { type Message, type Chat } from '@/lib/mock-data';
+import { type Message } from '@/lib/mock-data';
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { LanguageSelector } from '@/app/components/chat/language-selector';
+import { translateText } from '@/ai/flows/translate-flow';
 
 export default function ChatPage() {
   const params = useParams();
@@ -15,34 +16,48 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false); // New state to track client-side load
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [language, setLanguage] = useState('English');
-
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
-    // This effect now handles all localStorage interactions and only runs on the client
-    if (typeof window === 'undefined' || !chatId || !user) {
-      return;
-    }
-
-    setHasLoaded(true); 
-
-    localStorage.setItem('lastChatId', chatId);
-
-    const storedChats = localStorage.getItem('chats');
-    let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
-
-    const currentChat = chats.find((chat) => chat.id === chatId);
-    if (currentChat) {
-      setMessages(currentChat.messages);
-    } else {
-      // Chat doesn't exist, create it.
-      const newChat: Chat = { id: chatId, title: 'New Chat', messages: [] };
-      chats.unshift(newChat); // Add to the beginning of the array
-      localStorage.setItem('chats', JSON.stringify(chats));
-      setMessages([]);
+    if (typeof window !== 'undefined' && chatId && user) {
+      setHasLoaded(true);
+      localStorage.setItem('lastChatId', chatId);
+      const storedChats = localStorage.getItem('chats');
+      const chats = storedChats ? JSON.parse(storedChats) : [];
+      const currentChat = chats.find((chat: any) => chat.id === chatId);
+      if (currentChat) {
+        setMessages(currentChat.messages);
+      } else {
+        const newChat = { id: chatId, title: 'New Chat', messages: [] };
+        chats.unshift(newChat);
+        localStorage.setItem('chats', JSON.stringify(chats));
+        setMessages([]);
+      }
     }
   }, [chatId, user]);
+  
+  const handleLanguageChange = async (newLanguage: string) => {
+    setLanguage(newLanguage);
+    setIsTranslating(true);
+    try {
+      const translatedMessages = await Promise.all(
+        messages.map(async (message) => {
+          const translatedContent = await translateText({
+            text: message.content,
+            targetLanguage: newLanguage,
+          });
+          return { ...message, content: translatedContent };
+        })
+      );
+      setMessages(translatedMessages);
+    } catch (error) {
+      console.error("Error translating messages:", error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim() || !hasLoaded) return;
@@ -58,11 +73,10 @@ export default function ChatPage() {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
-    // Persist user message to localStorage
     try {
         const storedChats = localStorage.getItem('chats');
-        let chats: Chat[] = storedChats ? JSON.parse(storedChats) : [];
-        const chatIndex = chats.findIndex((chat) => chat.id === chatId);
+        let chats = storedChats ? JSON.parse(storedChats) : [];
+        const chatIndex = chats.findIndex((chat: any) => chat.id === chatId);
 
         if (chatIndex > -1) {
             if (chats[chatIndex].title === 'New Chat' && chats[chatIndex].messages.length === 0) {
@@ -70,7 +84,7 @@ export default function ChatPage() {
             }
             chats[chatIndex].messages = updatedMessages;
         } else {
-            const newChat: Chat = { id: chatId, title: content.substring(0, 30), messages: updatedMessages };
+            const newChat = { id: chatId, title: content.substring(0, 30), messages: updatedMessages };
             chats.unshift(newChat);
         }
         localStorage.setItem('chats', JSON.stringify(chats));
@@ -80,7 +94,6 @@ export default function ChatPage() {
     
 
     try {
-      // Fetch AI response
       const response = await fetch("https://bhargavi01.app.n8n.cloud/webhook/13b7d625-8215-4644-98db-d22d00966cd6/chat", {
         method: "POST",
         headers: {
@@ -101,7 +114,6 @@ export default function ChatPage() {
       const data = await response.json();
       let aiContent = data.output || data.textResponse || data.reply || "Sorry, I couldn't get a response.";
       
-      // Ensure aiContent is a string. If it's an object, stringify it.
       if (typeof aiContent === 'object') {
         aiContent = "```json\n" + JSON.stringify(aiContent, null, 2) + "\n```";
       }
@@ -112,12 +124,11 @@ export default function ChatPage() {
         content: aiContent,
       };
       
-      // Final update to UI and localStorage with AI message
       const finalMessages = [...updatedMessages, aiMessage];
       setMessages(finalMessages);
 
       const finalChats = JSON.parse(localStorage.getItem('chats') || '[]');
-      const finalChatIndex = finalChats.findIndex((c: Chat) => c.id === chatId);
+      const finalChatIndex = finalChats.findIndex((c: any) => c.id === chatId);
       if (finalChatIndex > -1) {
           finalChats[finalChatIndex].messages = finalMessages;
           localStorage.setItem('chats', JSON.stringify(finalChats));
@@ -130,13 +141,12 @@ export default function ChatPage() {
             role: 'ai',
             content: `Error: ${error.message}`,
         };
-        // Final update to UI and localStorage with error message
         const finalMessages = [...updatedMessages, errorMessage];
         setMessages(finalMessages);
 
         try {
             const finalChats = JSON.parse(localStorage.getItem('chats') || '[]');
-            const finalChatIndex = finalChats.findIndex((c: Chat) => c.id === chatId);
+            const finalChatIndex = finalChats.findIndex((c: any) => c.id === chatId);
             if (finalChatIndex > -1) {
                 finalChats[finalChatIndex].messages = finalMessages;
                 localStorage.setItem('chats', JSON.stringify(finalChats));
@@ -149,8 +159,8 @@ export default function ChatPage() {
     }
   };
 
-  if (isUserLoading || !hasLoaded) {
-    return <div className="flex h-full items-center justify-center"><p>Loading...</p></div>;
+  if (isUserLoading || !hasLoaded || isTranslating) {
+    return <div className="flex h-full items-center justify-center"><p>{isTranslating ? 'Translating...' : 'Loading...'}</p></div>;
   }
 
   return (
@@ -163,8 +173,8 @@ export default function ChatPage() {
             <div className="pb-2">
                 <LanguageSelector 
                     selectedLanguage={language}
-                    onLanguageChange={setLanguage}
-                    disabled={isSending}
+                    onLanguageChange={handleLanguageChange}
+                    disabled={isSending || isTranslating}
                 />
             </div>
           <ChatInput 
