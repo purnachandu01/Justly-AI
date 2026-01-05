@@ -15,7 +15,7 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [selectedLanguage, setSelectedLanguage] = useState("en-US");
 
   useEffect(() => {
     if (typeof window !== 'undefined' && chatId && user) {

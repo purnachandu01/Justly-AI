@@ -5,7 +5,6 @@ import { Mic, Send, Square } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { LanguageSelector } from "./language-selector";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -133,12 +132,11 @@ export default function ChatInput({ onSendMessage, isSending, inputValue, setInp
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="min-h-[52px] resize-none pr-36"
+        className="min-h-[52px] resize-none pr-28"
         aria-label="Chat input"
         disabled={isSending}
       />
       <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1">
-        <LanguageSelector selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} />
         <Button type="button" variant="ghost" size="icon" onClick={handleMicClick} disabled={isSending} className={cn(isRecognizing && "text-red-500 hover:text-red-600")}>
           {isRecognizing ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
           <span className="sr-only">{isRecognizing ? "Stop listening" : "Use microphone"}</span>
