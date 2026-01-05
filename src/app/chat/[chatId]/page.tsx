@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useParams } from 'next/navigation';
 import { useUser } from '@/firebase';
+import { LanguageSelector } from '@/app/components/chat/language-selector';
 
 export default function ChatPage() {
   const params = useParams();
@@ -15,6 +16,7 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [hasLoaded, setHasLoaded] = useState(false); // New state to track client-side load
+  const [language, setLanguage] = useState('English');
 
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function ChatPage() {
           sessionId: chatId,
           action: "sendMessage",
           chatInput: content,
-          userLang: "English"
+          userLang: language
         }),
       });
 
@@ -158,6 +160,13 @@ export default function ChatPage() {
       </div>
       <div className="absolute bottom-0 left-0 w-full border-t border-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto max-w-3xl p-4 md:p-6">
+            <div className="pb-2">
+                <LanguageSelector 
+                    selectedLanguage={language}
+                    onLanguageChange={setLanguage}
+                    disabled={isSending}
+                />
+            </div>
           <ChatInput 
             onSendMessage={handleSendMessage} 
             isSending={isSending}
