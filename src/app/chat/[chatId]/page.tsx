@@ -15,6 +15,7 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   useEffect(() => {
     if (typeof window !== 'undefined' && chatId && user) {
@@ -78,6 +79,7 @@ export default function ChatPage() {
           sessionId: chatId,
           action: "sendMessage",
           chatInput: content,
+          language: selectedLanguage,
         }),
       });
 
@@ -149,6 +151,8 @@ export default function ChatPage() {
             isSending={isSending}
             inputValue={inputValue}
             setInputValue={setInputValue}
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
           />
         </div>
       </div>
